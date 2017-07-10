@@ -19,13 +19,15 @@ import android.widget.RemoteViews;
 
 public class AdaptiveBrightnessWidget extends AppWidgetProvider {
 
-    public static final String TOGGLE_BRIGHTNESS_EXTRA = "TOGGLE_BRIGHTNESS";
+    public static final String TAG = "AdaptiveBrightnessWidget";
 
-    private ContentObserver observer;
+    public static final String EXTRA_TOGGLE_BRIGHTNESS = "TOGGLE_BRIGHTNESS";
+
+    private static ContentObserver observer;
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if(intent.getBooleanExtra(TOGGLE_BRIGHTNESS_EXTRA, false)) {
+        if(intent.getBooleanExtra(EXTRA_TOGGLE_BRIGHTNESS, false)) {
             toggleBrightness(context);
         }
         super.onReceive(context, intent);
@@ -106,8 +108,8 @@ public class AdaptiveBrightnessWidget extends AppWidgetProvider {
         Intent intent = new Intent(context, AdaptiveBrightnessWidget.class);
         intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
         intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds);
-        intent.putExtra(TOGGLE_BRIGHTNESS_EXTRA, true);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        intent.putExtra(EXTRA_TOGGLE_BRIGHTNESS, true);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, EXTRA_TOGGLE_BRIGHTNESS.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT);
         return pendingIntent;
     }
 
