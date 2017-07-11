@@ -82,7 +82,7 @@ public class VolumeControlWidget extends AppWidgetProvider {
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        Log.d(TAG, "onUpdate");
+        //Log.d(TAG, "onUpdate");
         ComponentName provider = new ComponentName(context, VolumeControlWidget.class);
         appWidgetManager.updateAppWidget(provider, buildUpdate(context, appWidgetIds));
     }
