@@ -22,7 +22,7 @@ import android.widget.RemoteViews;
 
 public class VolumeControlWidget extends AppWidgetProvider {
 
-    public static final String TAG = "VolumeControlWidget";
+    public static final String TAG = "VolumeControl";
 
     public static final String EXTRA_INCREASE_VOLUME = "INCREASE_VOLUME";
     public static final String EXTRA_DECREASE_VOLUME = "DECREASE_VOLUME";
@@ -30,6 +30,7 @@ public class VolumeControlWidget extends AppWidgetProvider {
 
     private static final int[] AUDIO_STREAMS = {AudioManager.STREAM_MUSIC, AudioManager.STREAM_RING, AudioManager.STREAM_ALARM};
 
+    private static boolean initialized = false;
     private static AudioManager audioManager;
     private static int streamIndex;
     private static int[] streamVolumes = new int[3];
@@ -38,9 +39,14 @@ public class VolumeControlWidget extends AppWidgetProvider {
     @Override
     public void onReceive(Context context, Intent intent) {
         //Log.d(TAG, "onReceive");
-        if(audioManager==null) {
+
+        // initialize here
+        if(!initialized) {
+            initialized = true;
             audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            registerContentObserver(context);
         }
+
         if(intent.getBooleanExtra(EXTRA_INCREASE_VOLUME, false)) {
             if(!checkPermission(context)) {
                 return;
@@ -76,7 +82,7 @@ public class VolumeControlWidget extends AppWidgetProvider {
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-       // Log.d(TAG, "onUpdate");
+        Log.d(TAG, "onUpdate");
         ComponentName provider = new ComponentName(context, VolumeControlWidget.class);
         appWidgetManager.updateAppWidget(provider, buildUpdate(context, appWidgetIds));
     }
@@ -97,7 +103,7 @@ public class VolumeControlWidget extends AppWidgetProvider {
         switch (AUDIO_STREAMS[streamIndex]) {
             case AudioManager.STREAM_RING:
                 text = "Ringer volume";
-                resource = R.drawable.ic_ring_volume_white_48dp;
+                resource = R.drawable.ic_notifications_white_48dp;
                 break;
             case AudioManager.STREAM_MUSIC:
                 text = "Media volume";
@@ -105,7 +111,7 @@ public class VolumeControlWidget extends AppWidgetProvider {
                 break;
             case AudioManager.STREAM_ALARM:
                 text = "Alarm volume";
-                resource = R.drawable.ic_notifications_white_48dp;
+                resource = R.drawable.ic_alarm_white_48dp;
                 break;
         }
         updateViews.setTextViewText(R.id.textView_volume_info, text + " " + streamVolumes[streamIndex]);
@@ -144,18 +150,17 @@ public class VolumeControlWidget extends AppWidgetProvider {
         //Log.d(TAG, "onEnabled");
         super.onEnabled(context);
         streamIndex = 0;
-        registerVolumeObserver(context);
+        //registerContentObserver(context);
     }
 
     @Override
     public void onDisabled(Context context) {
         //Log.d(TAG, "onDisabled");
-        unregisterVolumeObserver(context);
+        unregisterContentObserver(context);
         super.onDisabled(context);
     }
 
-    private void registerVolumeObserver(final Context context) {
-        Uri uri = Settings.System.CONTENT_URI;
+    private void registerContentObserver(final Context context) {
         observer = new ContentObserver(new Handler()) {
             @Override
             public boolean deliverSelfNotifications() {
@@ -164,18 +169,20 @@ public class VolumeControlWidget extends AppWidgetProvider {
 
             @Override
             public void onChange(boolean selfChange) {
+                //Log.d(TAG, "onChange");
                 super.onChange(selfChange);
-                if(streamVolumes[0] != audioManager.getStreamVolume(AUDIO_STREAMS[0])
+                if (streamVolumes[0] != audioManager.getStreamVolume(AUDIO_STREAMS[0])
                         || streamVolumes[1] != audioManager.getStreamVolume(AUDIO_STREAMS[1])
                         || streamVolumes[2] != audioManager.getStreamVolume(AUDIO_STREAMS[2])) {
                     updateWidget(context);
                 }
             }
         };
+        Uri uri = Settings.System.CONTENT_URI;
         context.getContentResolver().registerContentObserver(uri, true, observer);
     }
 
-    private void unregisterVolumeObserver(Context context) {
+    private void unregisterContentObserver(Context context) {
         if(observer!=null) {
             context.getContentResolver().unregisterContentObserver(observer);
         }

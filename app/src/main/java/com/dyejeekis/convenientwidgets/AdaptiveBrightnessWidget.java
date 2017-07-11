@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.provider.Settings;
+import android.util.Log;
 import android.widget.RemoteViews;
 
 /**
@@ -19,14 +20,21 @@ import android.widget.RemoteViews;
 
 public class AdaptiveBrightnessWidget extends AppWidgetProvider {
 
-    public static final String TAG = "AdaptiveBrightnessWidget";
+    public static final String TAG = "AdaptiveBrightness";
 
     public static final String EXTRA_TOGGLE_BRIGHTNESS = "TOGGLE_BRIGHTNESS";
 
+    private static boolean initialized = false;
     private static ContentObserver observer;
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        //initialize here
+        if(!initialized) {
+            initialized = true;
+            registerContentObserver(context);
+        }
+
         if(intent.getBooleanExtra(EXTRA_TOGGLE_BRIGHTNESS, false)) {
             toggleBrightness(context);
         }
@@ -42,17 +50,16 @@ public class AdaptiveBrightnessWidget extends AppWidgetProvider {
     @Override
     public void onEnabled(Context context) {
         super.onEnabled(context);
-        registerSettingObserver(context);
+        //registerContentObserver(context);
     }
 
     @Override
     public void onDisabled(Context context) {
-        unregisterSettingObserver(context);
+        unregisterContentObserver(context);
         super.onDisabled(context);
     }
 
-    private void registerSettingObserver(final Context context) {
-        Uri setting = Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS_MODE);
+    private void registerContentObserver(final Context context) {
         observer = new ContentObserver(new Handler()) {
             @Override
             public boolean deliverSelfNotifications() {
@@ -61,10 +68,12 @@ public class AdaptiveBrightnessWidget extends AppWidgetProvider {
 
             @Override
             public void onChange(boolean selfChange) {
+                Log.d(TAG, "onChange");
                 super.onChange(selfChange);
                 updateWidget(context);
             }
         };
+        Uri setting = Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS_MODE);
         context.getContentResolver().registerContentObserver(setting, false, observer);
     }
 
@@ -76,7 +85,7 @@ public class AdaptiveBrightnessWidget extends AppWidgetProvider {
         context.sendBroadcast(intent);
     }
 
-    private void unregisterSettingObserver(Context context) {
+    private void unregisterContentObserver(Context context) {
         if(observer!=null) {
             context.getContentResolver().unregisterContentObserver(observer);
         }
