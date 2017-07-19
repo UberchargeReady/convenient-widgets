@@ -28,7 +28,15 @@ public class VolumeControlWidget extends AppWidgetProvider {
     public static final String EXTRA_DECREASE_VOLUME = "DECREASE_VOLUME";
     public static final String EXTRA_TOGGLE_CURRENT_STREAM = "VOLUME_DEFAULT";
 
-    private static final int[] AUDIO_STREAMS = {AudioManager.STREAM_MUSIC, AudioManager.STREAM_RING, AudioManager.STREAM_ALARM};
+    public static final int STREAM_MUSIC = AudioManager.STREAM_MUSIC;
+    public static final int STREAM_RING = AudioManager.STREAM_RING;
+    public static final int STREAM_ALARM = AudioManager.STREAM_ALARM;
+
+    public static final int RINGER_MODE_NORMAL = AudioManager.RINGER_MODE_NORMAL;
+    public static final int RINGER_MODE_VIBRATE = AudioManager.RINGER_MODE_VIBRATE;
+    public static final int RINGER_MODE_SILENT = AudioManager.RINGER_MODE_SILENT;
+
+    private static final int[] AUDIO_STREAMS = {STREAM_MUSIC, STREAM_RING, STREAM_ALARM};
 
     private static boolean initialized = false;
     private static AudioManager audioManager;
@@ -66,10 +74,56 @@ public class VolumeControlWidget extends AppWidgetProvider {
     }
 
     private void increaseVolume() {
+        switch (AUDIO_STREAMS[streamIndex]) {
+            case STREAM_RING:
+                int volume = audioManager.getStreamVolume(STREAM_RING);
+                int mode = audioManager.getRingerMode();
+                if(volume == 0) {
+                    if(mode == RINGER_MODE_SILENT) {
+                        audioManager.setRingerMode(RINGER_MODE_VIBRATE);
+                    }
+                    else if(mode == RINGER_MODE_VIBRATE) {
+                        increaseVolumeDefault();
+                        audioManager.setRingerMode(RINGER_MODE_NORMAL);
+                    }
+                }
+                else {
+                    increaseVolumeDefault();
+                }
+                break;
+            default:
+                increaseVolumeDefault();
+                break;
+        }
+    }
+
+    private void increaseVolumeDefault() {
         audioManager.adjustStreamVolume(AUDIO_STREAMS[streamIndex], AudioManager.ADJUST_RAISE, 0);
     }
 
     private void decreaseVolume() {
+        switch (AUDIO_STREAMS[streamIndex]) {
+            case STREAM_RING:
+                int volume = audioManager.getStreamVolume(STREAM_RING);
+                int mode = audioManager.getRingerMode();
+                if(volume == 1) {
+                    decreaseVolumeDefault();
+                    audioManager.setRingerMode(RINGER_MODE_VIBRATE);
+                }
+                else if(volume == 0 && mode == RINGER_MODE_VIBRATE) {
+                    audioManager.setRingerMode(RINGER_MODE_SILENT);
+                }
+                else {
+                    decreaseVolumeDefault();
+                }
+                break;
+            default:
+                decreaseVolumeDefault();
+                break;
+        }
+    }
+
+    private void decreaseVolumeDefault() {
         audioManager.adjustStreamVolume(AUDIO_STREAMS[streamIndex], AudioManager.ADJUST_LOWER, 0);
     }
 
@@ -98,23 +152,38 @@ public class VolumeControlWidget extends AppWidgetProvider {
                 getPendingIntent(context, appWidgetIds, EXTRA_TOGGLE_CURRENT_STREAM));
 
         updateStreamVolumes();
+        int volume = streamVolumes[streamIndex];
         String text = "";
+        String addText = "";
         int resource = -1;
         switch (AUDIO_STREAMS[streamIndex]) {
-            case AudioManager.STREAM_RING:
-                text = "Ringer volume";
-                resource = R.drawable.ic_notifications_white_48dp;
+            case STREAM_RING:
+                text = "Ring volume ";
+                int mode = audioManager.getRingerMode();
+                switch (mode) {
+                    case RINGER_MODE_SILENT:
+                        addText = " (Silent)";
+                        resource = R.drawable.ic_do_not_disturb_on_white_48dp;
+                        break;
+                    case RINGER_MODE_VIBRATE:
+                        addText = " (Vibrate)";
+                        resource = R.drawable.ic_vibration_white_48dp;
+                        break;
+                    default:
+                        resource = R.drawable.ic_notifications_white_48dp;
+                        break;
+                }
                 break;
-            case AudioManager.STREAM_MUSIC:
-                text = "Media volume";
+            case STREAM_MUSIC:
+                text = "Media volume ";
                 resource = R.drawable.ic_music_note_white_48dp;
                 break;
-            case AudioManager.STREAM_ALARM:
-                text = "Alarm volume";
-                resource = R.drawable.ic_alarm_white_48dp;
+            case STREAM_ALARM:
+                text = "Alarm volume ";
+                resource = (volume == 0) ? R.drawable.ic_alarm_off_white_48dp : R.drawable.ic_alarm_white_48dp;
                 break;
         }
-        updateViews.setTextViewText(R.id.textView_volume_info, text + " " + streamVolumes[streamIndex]);
+        updateViews.setTextViewText(R.id.textView_volume_info, text + volume + addText);
         updateViews.setImageViewResource(R.id.imageView_current_stream, resource);
         updateViews.setImageViewResource(R.id.imageView_decrease_volume, R.drawable.ic_remove_white_48dp);
         updateViews.setImageViewResource(R.id.imageView_increase_volume, R.drawable.ic_add_white_48dp);
@@ -194,7 +263,7 @@ public class VolumeControlWidget extends AppWidgetProvider {
      * @return true if permission is already granted - false if not
      */
     private boolean checkPermission(Context context) {
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && AUDIO_STREAMS[streamIndex] == AudioManager.STREAM_RING) {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && AUDIO_STREAMS[streamIndex] == STREAM_RING) {
             NotificationManager notificationManager =
                     (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             if(notificationManager.isNotificationPolicyAccessGranted()) {
