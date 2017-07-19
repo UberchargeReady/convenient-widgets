@@ -98,7 +98,7 @@ public class VolumeControlWidget extends AppWidgetProvider {
     }
 
     private void increaseVolumeDefault() {
-        audioManager.adjustStreamVolume(AUDIO_STREAMS[streamIndex], AudioManager.ADJUST_RAISE, 0);
+        audioManager.adjustStreamVolume(AUDIO_STREAMS[streamIndex], AudioManager.ADJUST_RAISE, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
     }
 
     private void decreaseVolume() {
@@ -124,7 +124,7 @@ public class VolumeControlWidget extends AppWidgetProvider {
     }
 
     private void decreaseVolumeDefault() {
-        audioManager.adjustStreamVolume(AUDIO_STREAMS[streamIndex], AudioManager.ADJUST_LOWER, 0);
+        audioManager.adjustStreamVolume(AUDIO_STREAMS[streamIndex], AudioManager.ADJUST_LOWER, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
     }
 
     private void toggleCurrentStream() {
